@@ -1,4 +1,8 @@
-
+import MeCab
+import numpy as np
+from sklearn.feature_extraction.text import TfidfVectorizer
+from datetime import date
+import math
 
 class company_summary:    
     def growth_summary(datas: list, label: str = 'mau') -> str:
@@ -132,5 +136,112 @@ class company_summary:
         
         return company_info_summary
 
+class news_summary:
+    def get_top_news_title(news: list[str], top_n: int = 10) -> list[str]:
+        """
+        Get top 10 news titles using TF-IDF
+
+        Parameters
+            - news (list[str]): The list of the company news titles
+            - top_n (int): The number of how many news titles that will get (default = 10)
+
+        Return
+            - top_n_news (list[str]): The list of the top n company news titles
+        """
+        mecabrc_path = "/opt/homebrew/etc/mecabrc"
+        dic_path = "/opt/homebrew/Cellar/mecab-ko-dic/2.1.1-20180720/lib/mecab/dic/mecab-ko-dic"
+
+        mecab = MeCab.Tagger(f"-r {mecabrc_path} -d {dic_path}")
+
+        def tokenizer(text):
+            parsed = mecab.parse(text)
+            return [line.split('\t')[0] for line in parsed.splitlines() if '\t' in line]
+        
+        vectorizer = TfidfVectorizer(tokenizer=tokenizer, token_pattern=None)
+        tfidf_matrix = vectorizer.fit_transform(news)
+
+        # Select the top N based on the average TF-IDF score for each title
+        scores = tfidf_matrix.mean(axis=1).flatten().tolist()[0]
+        ranked = sorted(zip(news, scores), key=lambda x: x[1], reverse=True)
+
+        # Get top n index
+        top_n_news = [title for title, _ in ranked[:top_n]]
+
+        return top_n_news
     
+    def get_3_news(top_news: list[dict], top_n: int = 3) -> list[dict]:
+        """
+        Get the top 3 news using the latest date and the keyword-based weight scores
+
+        Parameters
+            - top_news (list[dict]): The list of the top 10 news that filtered with TF-IDF
+            - top_n (int): The number of how many news titles that will get (default = 3)
+        
+        Return
+            - top_scored_news (list[dict]): The list of the top n company news titles and their date
+        """
+
+        keywords = ['매출', '흑자', '적자', '실적', '이익', '수익', '영업이익', '재무', '성장', '분기', '연간', '달성',
+                    '해외진출', '확장', '진출', '글로벌', '출시', '오픈', '출범', '런칭', '사업', '전략', '개편',
+                    'AI', '기술', '신기술', '서비스', '개발', '혁신', '솔루션', 'API', '모델', '플랫폼',
+                    '채용', '인재', '조직', '인사', '대표', 'CEO', '팀', '임원', '인력', '리더십',
+                    '투자', '시리즈', 'M&A', '인수', '지분', '유치', '펀딩', '상장', 'IPO',
+                    '사용자', '고객', 'MAU', '트래픽', '리텐션', '시장', '점유율', '경쟁', '반응',
+                    '규제', '이슈', '소송', '법', '정부', '정책', '감사', '과징금', '제재']
+        
+        today = date.today()
+        
+        score = []
+
+        for item in top_news:
+            title = item['title']
+            news_date = item['date']
+
+            # Keyword appearance score
+            # Remove duplicate keywords
+            matched_keywords = {key for key in keywords if key in title}
+            keyword_scores = len(matched_keywords)
+
+            # Date based weights (e.g., The oldest news is lower weights)
+            days_count = (today - news_date).days
+            date_weights = 1 / (math.log(days_count + 2))       # log scale weights -> A method to decay the score as the date gets older
+                                                                #                   -> Boost the score for fresher news
+            
+            total_scores = keyword_scores * date_weights
+
+            score.append({'title': title,
+                          'date': news_date,
+                          'score': total_scores})
+        
+        # Get top n based on the score
+        top_scored_news = sorted(score, key=lambda x: x['score'], reverse=True)[:top_n]
+
+        return top_scored_news
     
+    def summarize_news(news_list: list[dict]) -> str:
+        """
+        Summarize the company news
+
+        Parameter
+            - top_3_news (dict): The dictionary of the filtered 3 company news
+
+        Return
+            - company_news_summary (str): The comapny news summary
+        """
+
+        titles = [title['title'] for title in news_list]
+        top_n_titles = news_summary.get_top_news_title(titles)
+        filtered_news = [item for item in news_list if item['title'] in top_n_titles]
+        top_news = news_summary.get_3_news(filtered_news)
+        
+        summary = []
+
+        for news in top_news:
+            date_str = news['date'].strftime("%Y-%m-%d") if hasattr(news['date'], 'strftime') else str(news['date'])
+            title = news['title']
+            summary.append(f"{date_str}: {title}")
+        
+        company_news_summary = '\n'.join(summary)
+        
+        return company_news_summary
+

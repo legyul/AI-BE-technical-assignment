@@ -234,6 +234,47 @@ class parsing:
         
         return talent_company
 
+    def get_company_news(conn, company: str, start_date: tuple[int, int], end_date: tuple[int, int]) -> list:
+        """
+        Get and preprocess company news information from the company_news table during talent's tenure
 
+        Parameters
+            - company (str): The name of the company
+            - start_date (tuple[int, int]): Date (year and month) the talent started working for the company
+            - end_date (tuple[int, int]): Date (year and month) the talent left the company
 
+        Return
+            - news_titles (list): The list of the company news title during talent's tenure
+        """
 
+        company_id = {'비바리퍼블리카': 1,
+                      '네이버': 2,
+                      '리디': 3,
+                      '엘박스': 4,
+                      '야놀자': 6}
+
+        # Get company news data from company_news table during talent's tenure
+        cursor = conn.cursor()
+        cursor.execute("""
+                    SELECT * 
+                    FROM company_news 
+                    WHERE company_id = %s
+                    AND (EXTRACT(YEAR FROM news_date) > %s
+                        OR (EXTRACT(YEAR FROM news_date) = %s AND EXTRACT(MONTH FROM news_date) >= %s))
+                    AND (EXTRACT(YEAR FROM news_date) < %s
+                        OR (EXTRACT(YEAR FROM news_date) = %s AND EXTRACT(MONTH FROM news_date) <= %s))
+                    """,
+                    (company_id.get(company),
+                     start_date[0], start_date[0], start_date[1],
+                     end_date[0], end_date[0], end_date[1]))
+        
+        news_raw = cursor.fetchall()
+        news_titles = []
+
+        # Store news title and its date
+        for i in range(0, len(news_raw)):
+            title = news_raw[i][2]
+            date = news_raw[i][4]
+            news_titles.append({'title': title, 'date': date})
+        
+        return news_titles
