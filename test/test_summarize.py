@@ -1,8 +1,9 @@
 import pytest
 from preprocess import parsing
-from summarize import company_summary
+from summarize import talent_summary, company_summary
 import json
 
+EXAMPLE_PATH = "./example_datas/talent_ex3.json"
 COMPANY_EXAMPLE_PATH = "./example_datas/company_ex1_비바리퍼블리카.json"
 
 def test_growth_summary():
@@ -85,7 +86,7 @@ def test_company_info_summary():
 
 def test_company_info_summary_empty_info():
     """
-    Test if summarize the company info with no certain information
+    Test if summarize the company information with no certain information
     """
 
     with open(COMPANY_EXAMPLE_PATH, "r") as f:
@@ -100,3 +101,15 @@ def test_company_info_summary_empty_info():
 
     assert "투자 정보 없음" in statement
     assert "재무 정보 없음" in statement
+
+def test_profile_summary():
+    """
+    Test if summarize the talent's profile will
+    """
+    data = parsing.preprocessing_personal_info(EXAMPLE_PATH)
+
+    profile = talent_summary.profile_summary(data)
+
+    assert "이름: " in profile
+    assert "최종 학력: " in profile
+    assert "산업 분야: " in profile

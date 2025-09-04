@@ -21,15 +21,27 @@ class parsing:
         # Combine the last and first name of talent
         name = talent_dict['lastName'] + talent_dict['firstName']
 
-        # Preprocess the talent's education
-        edu = talent_dict.get("educations", [])[0] if talent_dict.get("educations") else {}
-        education = {
-            "school": edu.get("schoolName"),
-            "degree": edu.get("degreeName"),
-            "field": edu.get("fieldOfStudy"),
-            "year": (edu.get("originStartEndDate", {}).get("startDateOn", {}).get("year"), edu.get("originStartEndDate", {}).get("endDateOn", {}).get("year"))
-        }
+        # Preprocess the talent's education and store their higher education
+        edu_raw = talent_dict.get("educations", []) if talent_dict.get("educations") else {}
+        
+        education = []
+        
+        for edu in edu_raw:
+            start_date = edu.get("originStartEndDate", {}).get("startDateOn", {}).get("year")
+            end_date = edu.get("originStartEndDate", {}).get("endDateOn", {}).get("year")
 
+            education.append({"school": edu.get("schoolName"),
+                              "degree": edu.get("degreeName"),
+                              "field": edu.get("fieldOfStudy"),
+                              "year": (start_date, end_date)})
+        
+        if education:
+            education = sorted(education,
+                               key=lambda x: x["year"][1] if x["year"][1] is not None else 0,
+                               reverse=True)[0]
+        else:
+            education = {}
+        
         # Preprocess the talent's position
         position = []
         
@@ -196,9 +208,14 @@ class parsing:
         Return
             - company_info (dict): The dictionary contains company information of the mau, investment, organization, finance during tatlent worked for
         """
+        
+        start_year_month = f"{start_date[0]}-{int(start_date[1]):02d}"
 
-        start_year_month = f"{start_date[0]}-{start_date[1]:02d}"
-        end_year_month = f"{end_date[0]}-{end_date[1]:02d}"
+        if end_date != "Present":
+            end_year_month = f"{end_date[0]}-{end_date[1]:02d}"
+        else:
+            today = datetime.today()
+            end_year_month = f"{today.year}-{today.month:02d}"
 
         company_info = {"mau": parsing.get_mau(company_data, start_year_month, end_year_month),
                         "investment": parsing.get_invest(company_data, start_year_month, end_year_month),
@@ -234,7 +251,7 @@ class parsing:
         
         return talent_company
 
-    def get_company_news(conn, company: str, start_date: tuple[int, int], end_date: tuple[int, int]) -> list:
+    def get_company_news(conn, company: str, start_date: tuple[int, int], end_date: tuple[int, int]) -> list[dict]:
         """
         Get and preprocess company news information from the company_news table during talent's tenure
 
@@ -244,8 +261,14 @@ class parsing:
             - end_date (tuple[int, int]): Date (year and month) the talent left the company
 
         Return
-            - news_titles (list): The list of the company news title during talent's tenure
+            - news_titles (list[dict]): The list of the company news title during talent's tenure
         """
+
+        if isinstance(end_date, tuple):
+            end_date = end_date
+        else:
+            today = datetime.today()
+            end_date = (today.year, today.month)
 
         company_id = {'비바리퍼블리카': 1,
                       '네이버': 2,

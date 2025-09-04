@@ -3,6 +3,38 @@ import numpy as np
 from sklearn.feature_extraction.text import TfidfVectorizer
 from datetime import date
 import math
+from preprocess import parsing
+import textwrap
+
+class talent_summary:
+    def profile_summary(profile: dict) -> str:
+        """
+        Summarize the talent's profile
+
+        Parameter
+            - profile (dict): The profile of the talent
+
+        Return
+            - (str): Summary of the profile
+        """
+
+        name = profile.get('name', '')
+        headline = profile.get('headline', '')
+        profile_summ = profile.get('summary', '')
+        skills = profile.get('skills', '')
+        education = profile['education']
+        edu_year = education.get('year')
+        edu = education.get('school') + " " + education.get('field') + " " + education.get('degree') + " " + f'({edu_year[0]} - {edu_year[1]})'
+        industry = profile.get('industry')
+
+        profile_summary = (f"이름: {name}\n"
+                           f"헤드라인: {headline}\n"
+                           f"요약: {profile_summ}\n"
+                           f"기술: {skills}\n"
+                           f"최종 학력: {edu}\n"
+                           f"산업 분야: {industry}")
+        
+        return profile_summary
 
 class company_summary:    
     def growth_summary(datas: list, label: str = 'mau') -> str:
@@ -245,3 +277,152 @@ class news_summary:
         
         return company_news_summary
 
+def summary_report(conn, profile: list[dict], profile_summary: str) -> str:
+    """
+    (Optional, for the report)
+    Summarize and combine all talent's profile, company information, and company news
+
+    Parameters
+        - profile (list[dict]): Preprocessed profile of the talent
+        - profile_summary (str): Summarized profile (exclude the company information and news)
+
+    Return
+        - full_summary (str): Summarized the full profile (include the company information and news)
+    """
+
+    positions_summary = []
+
+    # Get and summarize the company information and news by the position of the talent
+    for pos in profile['positions']:
+        company_name = pos['company']
+        start_date = pos['start']
+        end_date = pos['end']
+
+        if isinstance(end_date, tuple):
+            end_str = f"{end_date[0]}.{end_date[1]:02d}"
+        else:
+            today = date.today()
+            end_str = f"{today.year}.{today.month:02d}"
+
+        # Summarize the company information
+        company_data = parsing.get_company_data(conn, company_name)
+        company_info_summary = ""
+        
+        if company_data:
+            company_info = parsing.get_company_info(company_data, start_date, end_date)
+
+            if company_info:
+                info_text = company_summary.company_info_summary(company_info)
+
+                if info_text.strip():
+                    company_info_summary = f"\n\n[회사 정보 요약]\n{info_text}"
+
+        # Summarize the company news
+        news_data = parsing.get_company_news(conn, company_name, start_date, end_date)
+        company_news_summary = ""
+
+        if news_data:
+            news_text = news_summary.summarize_news(news_data)
+
+            if news_text.strip():
+                company_news_summary = f"\n[주요 뉴스 요약]\n{news_text}"
+
+        position_text = textwrap.dedent(f"""\
+회사명: {company_name}
+직책: {pos['title']}
+재직 기간: {start_date[0]}.{start_date[1]:02d} - {end_str}
+담당 업무:
+{pos['description']}\
+
+{company_info_summary}{company_news_summary}
+        """)
+
+        positions_summary.append(position_text)
+    
+    full_summary = profile_summary + "\n\n" + "\n\n".join(positions_summary)
+
+    return full_summary
+
+def summarize_position(conn, position: dict) -> str:
+    """
+    Summarize the company information and news of each position
+
+    Parameter
+        - position (dict): The position information 
+    
+    Return
+        - position_summary (str): The summary of each position
+    """
+
+    company_name = position['company']
+    start_date = position['start']
+    end_date = position['end']
+
+    if isinstance(end_date, tuple):
+        end_str = f"{end_date[0]}.{end_date[1]:02d}"
+    else:
+        today = date.today()
+        end_str = f"{today.year}.{today.month:02d}"
+    
+    company_data = parsing.get_company_data(conn, company_name)
+    info_summary = ""
+    company_news_summary = ""
+
+    if company_data:
+        company_info = parsing.get_company_info(company_data, start_date, end_date)
+
+        if company_info:
+            company_info_summary = company_summary.company_info_summary(company_info)
+
+            filtered_summary = [line for line in company_info_summary.splitlines() if '정보 없음' not in line.strip()]
+
+            if filtered_summary:
+                info_summary = "\n\n[재직 중 회사 정보 요약]\n" + "\n".join(filtered_summary)
+            else:
+                info_summary = ""
+        
+        news_data = parsing.get_company_news(conn, company_name, start_date, end_date)
+
+        if news_data:
+            company_news_summary = f"\n\n[재직 중 주요 뉴스 요약]\n{news_summary.summarize_news(news_data)}"
+
+    summarize_info_news = (f"회사명: {company_name}\n"
+                           f"직책: {position['title']}\n"
+                           f"재직 기간: {start_date[0]}.{start_date[1]} - {end_str}\n"
+                           f"담당 업무:\n{position['description']}"
+                           f"{info_summary}{company_news_summary}")
+    
+    return summarize_info_news
+
+
+def summary_prompt(conn, profile: dict, profile_summary: str, max_positions: int = 3) -> str:
+    """
+    (For the GPT prompt)
+    Summarize and combine all talent's profile, company information, and company news
+
+    Parameters
+        - profile (dict): Preprocessed profile of the talent
+        - profile_summary (str): Summarized profile (exclude the company information and news)
+        - max_positions (int): Limit the number of positions (default = 3)
+
+    Return
+        - full_summary (str): Summarized the full profile (include the company information and news)
+    """
+
+    positions = profile.get('positions', [])
+    positions_summary = []
+
+    for i, pos in enumerate(positions[:max_positions]):
+        summary_text = summarize_position(conn, pos)
+        positions_summary.append(summary_text)
+
+    # If there is more than maximum number of the positions
+    remain = len(positions) - max_positions
+    if remain > 0:
+        positions_summary.append(f"...외 {remain}건의 추가 포지션이 있습니다.")
+    
+    filtered_profile = [line for line in profile_summary.splitlines() if '이름' not in line.strip()]
+    profile_statement = "[프로필 요약]\n" + "\n".join(filtered_profile)
+    full_summary = profile_statement + '\n\n' + '\n\n'.join(positions_summary)
+
+    return full_summary
