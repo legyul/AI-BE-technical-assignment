@@ -178,7 +178,7 @@ class parsing:
 
         try:
             fin_info = company_data["finance"]["data"]
-            fin = [data for data in fin_info if start_date <= data["yeat"] <= end_date]
+            fin = [data for data in fin_info if int(start_date[:4]) <= data["year"] <= int(end_date[:4])]
 
             return fin
         except (KeyError, IndexError):

@@ -1,8 +1,10 @@
 from preprocess import parsing
 from summarize import company_summary
+import os
+import json
 import psycopg2
 
-data = parsing.preprocessing_personal_info('./example_datas/talent_ex1.json')
+# data = parsing.preprocessing_personal_info('./example_datas/talent_ex1.json')
 
 DB_CONFIG = {
     "host": "localhost",
@@ -35,7 +37,7 @@ conn = psycopg2.connect(
 # cursor.close()
 # conn.close()
 
-company_period = parsing.extract_company_period(data["positions"])
+#company_period = parsing.extract_company_period(data["positions"])
 
 
 # companies_info = []
@@ -51,16 +53,17 @@ company_period = parsing.extract_company_period(data["positions"])
 # mau_data = companies_info[0]['company_info']['mau']
 # values = [d["value"] for d in mau_data if "value" in d and d["value"] is not None]
 
-with open("./example_datas/company_ex3_리디.json", "r") as f:
+with open("./example_datas/company_ex1_비바리퍼블리카.json", "r") as f:
         company_data = json.load(f)
-start_date = (2024, 1)
-end_date = (2025, 8)
-data = parsing.get_company_info(company_data, start_date, end_date)
-print(data['organization'])
-statement = company_summary.mau_summary(data['mau'])
-print(statement)
+start_date = (2021, 1)
+end_date = (2023, 8)
 
-statements = company_summary.growth_summary(data['organization'], 'value', '조직 규모')
+
+data = parsing.get_company_info(company_data, start_date, end_date)
+# print(data['finance'])
+
+
+statements = company_summary.company_info_summary(data)
 print(f"\n{statements}")
 
 

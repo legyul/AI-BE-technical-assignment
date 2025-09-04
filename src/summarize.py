@@ -1,13 +1,12 @@
 
 
 class company_summary:    
-    def growth_summary(datas: list, key: str = 'value', label: str = 'mau') -> str:
+    def growth_summary(datas: list, label: str = 'mau') -> str:
         """
         Summarize the mau or organization information of the company
 
         Parameter
             - datas (list): The mau or organization information of the company
-            - key (str): The key of the value value (default = 'value')
             - label (str): The data label to handle (default = 'mau') (for the organization '조직 규모')
         
         Return
@@ -15,6 +14,7 @@ class company_summary:
         """
 
         statement = ""
+        key = 'value'
 
         values = [data.get(key) for data in datas if data.get(key) is not None]
 
@@ -82,8 +82,55 @@ class company_summary:
         # Caclulate the how many rounds
         rounds = [inv.get('level') for inv in invest if inv.get('level')]
 
-        invest_statement = f"재직 중 {len(rounds)}건의 투자 유치 (총 {total_invest/1e8: .2f}억원 규모)."
+        invest_statement = f"재직 중 {len(rounds)}건의 투자 유치 (총 {total_invest/1e8: .1f}억원 규모)."
 
         return invest_statement
+    
+    def fin_summary(fin: list) -> str:
+        """
+        Summarize the finance information of the company
+
+        Parameter
+            - fin (list): The list of the finance information of the company
+
+        Return
+            - fin_summary (str): The finance information summary
+        """
+
+        fin_statement = []
+        
+        for f in fin:
+            year = f.get('year')
+            profit = f.get('netProfit')
+
+            if profit is not None:
+                status = '흑자' if profit > 0 else '적자'
+                fin_statement.append(f'{year}년 {abs(profit/1e8): .1f}억원 {status}')
+        
+        if fin_statement:
+            fin_summary = "재직 중 재무 정보: " + ", ".join(fin_statement)
+        else:
+            fin_summary = "재직 중 재무 정보 없음."
+        
+        return fin_summary
+    
+    def company_info_summary(info: dict) -> str:
+        """
+        Summarize the company information
+
+        Parameter
+            - info (dict): The dictionary of the company info
+
+        Return
+            - company_info_summary (str): The comapny information summary
+        """
+
+        company_info_summary = (f"- {company_summary.growth_summary(info.get('mau', []), 'mau')}\n"
+                                f"- {company_summary.invest_summary(info.get('investment', []))}\n"
+                                f"- {company_summary.growth_summary(info.get('organization', []), '조직 규모')}\n"
+                                f"- {company_summary.fin_summary(info.get('finance', []))}\n")
+        
+        return company_info_summary
+
     
     
