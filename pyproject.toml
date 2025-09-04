@@ -4,12 +4,16 @@ version = "0.1.0"
 description = ""
 authors = ["Nuung <qlgks1@naver.com>"]
 readme = "README.md"
+package-mode = false
 
 [tool.poetry.dependencies]
 python = "^3.13"
 psycopg2-binary = "^2.9.10"
 openai = "^1.75.0"
 
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.4.1"
 
 [build-system]
 requires = ["poetry-core"]
