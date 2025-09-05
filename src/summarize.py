@@ -277,13 +277,12 @@ class news_summary:
         
         return company_news_summary
 
-def summary_report(conn, profile: list[dict], profile_summary: str) -> str:
+def summary(conn, profile: dict, profile_summary: str) -> str:
     """
-    (Optional, for the report)
     Summarize and combine all talent's profile, company information, and company news
 
     Parameters
-        - profile (list[dict]): Preprocessed profile of the talent
+        - profile (dict): Preprocessed profile of the talent
         - profile_summary (str): Summarized profile (exclude the company information and news)
 
     Return
@@ -294,52 +293,12 @@ def summary_report(conn, profile: list[dict], profile_summary: str) -> str:
 
     # Get and summarize the company information and news by the position of the talent
     for pos in profile['positions']:
-        company_name = pos['company']
-        start_date = pos['start']
-        end_date = pos['end']
+        summary_text = summarize_position(conn, pos)
+        positions_summary.append(summary_text)
 
-        if isinstance(end_date, tuple):
-            end_str = f"{end_date[0]}.{end_date[1]:02d}"
-        else:
-            today = date.today()
-            end_str = f"{today.year}.{today.month:02d}"
-
-        # Summarize the company information
-        company_data = parsing.get_company_data(conn, company_name)
-        company_info_summary = ""
-        
-        if company_data:
-            company_info = parsing.get_company_info(company_data, start_date, end_date)
-
-            if company_info:
-                info_text = company_summary.company_info_summary(company_info)
-
-                if info_text.strip():
-                    company_info_summary = f"\n\n[회사 정보 요약]\n{info_text}"
-
-        # Summarize the company news
-        news_data = parsing.get_company_news(conn, company_name, start_date, end_date)
-        company_news_summary = ""
-
-        if news_data:
-            news_text = news_summary.summarize_news(news_data)
-
-            if news_text.strip():
-                company_news_summary = f"\n[주요 뉴스 요약]\n{news_text}"
-
-        position_text = textwrap.dedent(f"""\
-회사명: {company_name}
-직책: {pos['title']}
-재직 기간: {start_date[0]}.{start_date[1]:02d} - {end_str}
-담당 업무:
-{pos['description']}\
-
-{company_info_summary}{company_news_summary}
-        """)
-
-        positions_summary.append(position_text)
-    
-    full_summary = profile_summary + "\n\n" + "\n\n".join(positions_summary)
+    filtered_profile = [line for line in profile_summary.splitlines() if '이름' not in line.strip()]
+    profile_statement = "[프로필 요약]\n" + "\n".join(filtered_profile)
+    full_summary = profile_statement + '\n\n' + '\n\n'.join(positions_summary)
 
     return full_summary
 
@@ -388,16 +347,20 @@ def summarize_position(conn, position: dict) -> str:
 
     summarize_info_news = (f"회사명: {company_name}\n"
                            f"직책: {position['title']}\n"
-                           f"재직 기간: {start_date[0]}.{start_date[1]} - {end_str}\n"
-                           f"담당 업무:\n{position['description']}"
-                           f"{info_summary}{company_news_summary}")
+                           f"재직 기간: {start_date[0]}.{start_date[1]:02d} - {end_str}\n"
+                           f"담당 업무:\n{position['description']}")
+    
+    if info_summary:
+        summarize_info_news += info_summary
+    if company_news_summary:
+        summarize_info_news += company_news_summary
     
     return summarize_info_news
 
 
-def summary_prompt(conn, profile: dict, profile_summary: str, max_positions: int = 3) -> str:
+def summary_short(conn, profile: dict, profile_summary: str, max_positions: int = 3) -> str:
     """
-    (For the GPT prompt)
+    (When want to use only 3 positions)
     Summarize and combine all talent's profile, company information, and company news
 
     Parameters

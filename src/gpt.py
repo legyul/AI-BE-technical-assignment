@@ -33,7 +33,7 @@ Please follow these instructions:
 - Do **not exceed 10 tags**
 - Output format must be as follows (in Korean):
 
-태그 (example):
+태그:
 - 상위권대학교 (연세대학교 출신)
 - 성장기스타트업 경험 (토스 재직 시기 중 투자 및 조직 규모 급성장)
 - 리더십 (Tech Lead, Chapter Lead 등 리더 타이틀 보유)
@@ -71,3 +71,36 @@ def gen_tags(prompt: str, model: str = "gpt-5-mini", temperature: float = 0.2) -
     except Exception as e:
         print(f"GPT 호출 실패: {e}")
         return ""
+
+def parse_gpt_tags(output: str) -> list[dict]:
+    """
+    Convert the GPT output to the JSON format
+
+    Parameter
+        - output (str): The GPT output
+    
+    Return
+        - tags (list[dict]): Converted the GPT output to the JSON format
+    """
+
+    lines = output.strip().splitlines()
+    tags = []
+
+    for line in lines:
+        line = line.strip()
+
+        if not line.startswith("- "):
+            continue
+
+        try:
+            # Type seperation
+            if " (" in line and line.endswith(")"):
+                tag, reason = line[2:].rsplit(" (", 1)
+                reason = reason.rsplit(")")
+                tags.append({"tag": tag.strip(), "reason": reason[0]})
+        
+        except Exception as e:
+            print(f"[ERROR] Convert the GPT output to the JSON: {e}")
+            continue
+
+    return tags
