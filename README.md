@@ -231,6 +231,7 @@ curl -X POST http://localhost:8000/api/talent \
   -F "threshold=0.85"
 ```  
 "file=@/your/talent/information/data.json" 이 부분에서 @ 이후 path를 분석할 인재 데이터 JSON 파일로 수정하시면 됩니다.  
+  
 "threshold=0.85" 이 threshold는 기존 인재 데이터 테이블 (테이블 이름: talent) 에서 similarity를 계산하는데 이용됩니다. 이 값이 높을 수록 similarity 점수가 높아 신뢰되가 높습니다.  
   
 ## 로직 흐름도
@@ -241,9 +242,9 @@ flowchart LR
     C --> D[포지션 요약]
     D --> E[기본 정보 요약 + 포지션별 요약]
     E --> F[embedding vectorization]
-    F --> G[인재 데이터 테이블 (talent) similarity 계산 (embedding vector 이용)]
+    F --> G[인재 데이터 테이블, talent, similarity 계산, embedding vector 이용]
     F --> G[높은 similarity 있으면 해당 태그 이용, 없으면 GPT 5-mini 모델로 태그 추론]
-    G --> H[태그 반환, 정보들 인재 데이터 테이블 (talent)에 저장]
+    G --> H[태그 반환, 정보들 인재 데이터 테이블, talent,에 저장]
 ```  
   
 ## 주요 파일 구조
