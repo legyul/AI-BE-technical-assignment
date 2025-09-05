@@ -226,7 +226,7 @@ poetry run python app.py
   
 터미널 2 - 테스트 또는 인터랙션 실행:  
 ```bash
-curl -X POST http://localhost:8000/api/talent \
+curl -X POST http://localhost:8000/talent \
   -F "file=@/your/talent/information/data.json" \
   -F "threshold=0.85"
 ```  
@@ -259,4 +259,7 @@ flowchart LR
    ├── talent_table.py              # talent 테이블 생성 및 추가
 ── logger_utils.py                  # 로거
 ── app.py                           # 실행 진입점
-```
+```  
+  
+## API Document  
+터미널 1 (app.py 실행) 실행 후 [http://localhost:8000/swagger](http://localhost:8000/swagger) 에 접속하면 API document를 보실 수 있습니다.

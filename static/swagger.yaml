@@ -1,0 +1,58 @@
+openapi: 3.0.0
+info:
+  title: Talent Tagging API
+  description: 유사 인재 기반 및 GPT 태그 추론 API 문서
+  version: "1.0.0"
+
+paths:
+  /talent:
+    post:
+      summary: 인재 태그 추론
+      description: JSON 형식 인재 파일 업로드 시 태그를 반환합니다.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: 인재 JSON 파일
+                threshold:
+                  type: number
+                  format: float
+                  default: 0.85
+                  description: 유사도 임계값
+      responses:
+        '200':
+          description: 태그 리스트 혹은 태그-근거 리스트 반환
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - type: object
+                    properties:
+                      tags:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            tag:
+                              type: string
+                              example: "상위권 대학"
+                            reason:
+                              type: string
+                              example: "서울대학교 컴퓨터공학 석사 보유."
+                        description: GPT 추론 결과
+                  - type: array
+                    items:
+                      type: string
+                    description: 유사 인재의 태그 목록
+        '400':
+          description: 파일 누락 오류
+        '422':
+          description: 유사도 임계값 설정 오류
+        '500':
+          description: 내부 서버 오류

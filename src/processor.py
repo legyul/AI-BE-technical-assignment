@@ -53,7 +53,8 @@ def process_talent(talent_path: str, threshold: float = 0.85):
         converted_tag = parse_gpt_tags(response)
 
         # Insert talent informations and tags to the talent table
-        # table_main(talent_name, summ, converted_tag, embedding)
+        table_main(talent_name, summ, converted_tag, embedding)
+        logger.info("[INFO] Completed insert 'talent' table")
 
         cursor.close()
         conn.close()
@@ -73,7 +74,8 @@ def process_talent(talent_path: str, threshold: float = 0.85):
             tag = [tag_dict['tag'] for tag_dict in tags_list]
 
             # Insert talent informations and tags to the talent table
-            # table_main(talent_name, summ, tag, embedding)
+            table_main(talent_name, summ, tag, embedding)
+            logger.info("[INFO] Completed insert 'talent' table")
 
             cursor.close()
             conn.close()
