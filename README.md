@@ -214,3 +214,46 @@ flowchart LR
 
 문의: dev@searchright.net <br />
 유선: 개별로 안내드렸습니다.
+
+---  
+  
+## 실행 방법
+터미널 1 - 백엔드 실행 (프로젝트 루트 디렉토리):  
+```bash
+poetry shell
+poetry run python app.py
+```  
+  
+터미널 2 - 테스트 또는 인터랙션 실행:  
+```bash
+curl -X POST http://localhost:8000/api/talent \
+  -F "file=@/your/talent/information/data.json" \
+  -F "threshold=0.85"
+```  
+"file=@/your/talent/information/data.json" 이 부분에서 @ 이후 path를 분석할 인재 데이터 JSON 파일로 수정하시면 됩니다.  
+"threshold=0.85" 이 threshold는 기존 인재 데이터 테이블 (테이블 이름: talent) 에서 similarity를 계산하는데 이용됩니다. 이 값이 높을 수록 similarity 점수가 높아 신뢰되가 높습니다.  
+  
+## 로직 흐름도
+```mermaid
+flowchart LR
+    A[이력 파싱] --> B[포지션별 회사명 추출]
+    B --> C[해당 회사 정보 요약 + 뉴스 요약]
+    C --> D[포지션 요약]
+    D --> E[기본 정보 요약 + 포지션별 요약]
+    E --> F[embedding vectorization]
+    F --> G[인재 데이터 테이블 (talent) similarity 계산 (embedding vector 이용)]
+    F --> G[높은 similarity 있으면 해당 태그 이용, 없으면 GPT 5-mini 모델로 태그 추론]
+    G --> H[태그 반환, 정보들 인재 데이터 테이블 (talent)에 저장]
+```  
+  
+## 주요 파일 구조
+```
+── src/
+   ├── processor.py                 # 로직 흐름
+   ├── preprocessing.py             # 이력서 파싱
+   ├── summarize.py                 # 정보 요약
+   ├── gpt.py                       # GPT model 실행
+   ├── talent_table.py              # talent 테이블 생성 및 추가
+── logger_utils.py         # 로거
+── app.py                  # 실행 진입점
+```
