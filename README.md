@@ -243,8 +243,9 @@ flowchart LR
     D --> E[기본 정보 요약 + 포지션별 요약]
     E --> F[embedding vectorization]
     F --> G[인재 데이터 테이블, talent, similarity 계산, embedding vector 이용]
-    F --> G[높은 similarity 있으면 해당 태그 이용, 없으면 GPT 5-mini 모델로 태그 추론]
-    G --> H[태그 반환, 정보들 인재 데이터 테이블, talent,에 저장]
+    G --> H[높은 similarity 있으면 해당 태그 이용]
+    G --> I[없으면 GPT 5-mini 모델로 태그 추론]
+    H, I --> J[태그 반환, 정보들 인재 데이터 테이블, talent,에 저장]
 ```  
   
 ## 주요 파일 구조
