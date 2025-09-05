@@ -1,9 +1,14 @@
 from dotenv import load_dotenv
 from openai import OpenAI
 import os
+import numpy as np
+from logger_utils import logger
 
 load_dotenv(dotenv_path="./.env")
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
+CHUNK_SIZE = 1000
+TEXT_TOKEN_LIMIT = 1000
 
 def build_prompt(profile_summary: str) -> str:
     """
@@ -46,14 +51,13 @@ Please follow these instructions:
 
     return prompt
 
-def gen_tags(prompt: str, model: str = "gpt-5-mini", temperature: float = 0.2) -> str:
+def gen_tags(prompt: str, model: str = "gpt-5-mini") -> str:
     """
     Call the GPT model to generate tags
 
     Parameters
         - prompt (str): The prompt to put into the GPT model
         - model (str): The name of the GPT model that will be used (default = "gpt-5-mini")
-        - temperature (float): The value that controls GPT's creativity/randomness (default = 0.2)
     
     Returns
         - str: The model response
@@ -64,12 +68,11 @@ def gen_tags(prompt: str, model: str = "gpt-5-mini", temperature: float = 0.2) -
                                                       {"role": "system", "content": "You are a specialist in precisely inferring talent tags."},
                                                       {"role": "user", "content": prompt}
                                                   ],)
-                                                  #temperature=temperature,)
         
         return response.choices[0].message.content.strip()
     
     except Exception as e:
-        print(f"GPT 호출 실패: {e}")
+        logger.error(f"[ERROR] Fail to load GPT: {e}")
         return ""
 
 def parse_gpt_tags(output: str) -> list[dict]:
@@ -100,7 +103,49 @@ def parse_gpt_tags(output: str) -> list[dict]:
                 tags.append({"tag": tag.strip(), "reason": reason[0]})
         
         except Exception as e:
-            print(f"[ERROR] Convert the GPT output to the JSON: {e}")
+            logger.error(f"[ERROR] Convert the GPT output to the JSON: {e}")
             continue
 
     return tags
+
+def _embedding(profile: str, model: str = "text-embedding-3-small") -> list[float]:
+    """
+    Perform embedding using the GPT model
+
+    Parameters
+        - profile (str): The profile summary of the talent
+        - model (str): The GPT embedding model (default = text-embedding-3-small)
+
+    Return
+        - vector (list[float]): The embedded profile summary of the talent
+    """
+    
+    # Get response from the model
+    try:
+        logger.info(f"[INFO] Start the profile embedding")
+        response = client.embeddings.create(model=model,
+                                            input=profile)
+        
+        vector = response.data[0].embedding
+
+        return vector
+    
+    except Exception as e:
+        logger.error(f"[ERROR] Embedding error: {e}")
+        return None
+
+def split_text(text, max_tokens):
+    # 단순히 문자 수 기준으로 자르기
+    return [text[i:i+max_tokens] for i in range(0, len(text), max_tokens)]
+
+def profile_embedding(text) -> list[float]:
+    """
+    If the length of the profile summary is longer than the token limit,
+    then chunk the profile summary and get the average of the chunks
+    """
+
+    chunks = split_text(text, TEXT_TOKEN_LIMIT)
+    vectors = [_embedding(chunk) for chunk in chunks]
+    avg_vector = np.mean(vectors, axis=0)
+
+    return avg_vector.tolist()
