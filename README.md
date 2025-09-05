@@ -262,4 +262,4 @@ flowchart LR
 ```  
   
 ## API Document  
-터미널 1 (app.py 실행) 실행 후 [http://localhost:8000/swagger](http://localhost:8000/swagger) 에 접속하면 API document를 보실 수 있습니다.
+위 터미널 1 (app.py 실행) 실행 후 [http://localhost:8000/swagger](http://localhost:8000/swagger) 에 접속하면 API document를 보실 수 있습니다.
