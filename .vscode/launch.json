@@ -7,7 +7,8 @@
         "request": "launch",
         "program": "AI-BE-technical-assignment/src/.",
         "console": "integratedTerminal",
-        "python": "/Users/namgyulee/Library/Caches/pypoetry/virtualenvs/searchright-technical-assignment-xIhMAkJR-py3.13/bin/python"
+        "python": "/Users/namgyulee/Library/Caches/pypoetry/virtualenvs/searchright-technical-assignment-xIhMAkJR-py3.13/bin/python",
+        "envFile": "${workspaceFolder}/.env"
       }
     ]
   }
