@@ -230,7 +230,7 @@ curl -X POST http://localhost:8000/api/talent \
   -F "file=@/your/talent/information/data.json" \
   -F "threshold=0.85"
 ```  
-"file=@/your/talent/information/data.json" 이 부분에서 @ 이후 path를 분석할 인재 데이터 JSON 파일로 수정하시면 됩니다.  
+"file=@/your/talent/information/data.json" 이 부분에서 @ 이후 path를 분석할 인재 데이터 JSON 파일 path로 수정하시면 됩니다.  
   
 "threshold=0.85" 이 threshold는 기존 인재 데이터 테이블 (테이블 이름: talent) 에서 similarity를 계산하는데 이용됩니다. 이 값이 높을 수록 similarity 점수가 높아 신뢰되가 높습니다.  
   
